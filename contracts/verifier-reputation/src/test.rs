@@ -51,14 +51,18 @@ fn test_record_confirmation_rejects_unauthorized_caller() {
     let (env, client, _admin, _writer) = setup();
     let hiker = Address::generate(&env);
     let rogue = Address::generate(&env);
-    assert!(client.try_record_confirmation(&rogue, &hiker, &50_i128).is_err());
+    assert!(client
+        .try_record_confirmation(&rogue, &hiker, &50_i128)
+        .is_err());
 }
 
 #[test]
 fn test_record_confirmation_rejects_negative_stake() {
     let (env, client, _admin, writer) = setup();
     let hiker = Address::generate(&env);
-    assert!(client.try_record_confirmation(&writer, &hiker, &(-1_i128)).is_err());
+    assert!(client
+        .try_record_confirmation(&writer, &hiker, &(-1_i128))
+        .is_err());
 }
 
 #[test]
@@ -86,12 +90,18 @@ fn test_score_capped_at_max() {
 fn test_trust_labels_reflect_score_bands() {
     let (env, client, _admin, writer) = setup();
     let baseline = Address::generate(&env);
-    assert_eq!(client.trust_label(&baseline), String::from_str(&env, "Reliable"));
+    assert_eq!(
+        client.trust_label(&baseline),
+        String::from_str(&env, "Reliable")
+    );
 
     let guardian = Address::generate(&env);
     for _ in 0..18 {
         client.record_confirmation(&writer, &guardian, &1_i128);
     }
     // 500 + 360 = 860 -> Trail Guardian
-    assert_eq!(client.trust_label(&guardian), String::from_str(&env, "Trail Guardian"));
+    assert_eq!(
+        client.trust_label(&guardian),
+        String::from_str(&env, "Trail Guardian")
+    );
 }

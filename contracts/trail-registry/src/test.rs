@@ -11,7 +11,11 @@ fn create_token_contract<'a>(
 ) -> (Address, token::StellarAssetClient<'a>, token::Client<'a>) {
     let sac = env.register_stellar_asset_contract_v2(admin.clone());
     let address = sac.address();
-    (address.clone(), token::StellarAssetClient::new(env, &address), token::Client::new(env, &address))
+    (
+        address.clone(),
+        token::StellarAssetClient::new(env, &address),
+        token::Client::new(env, &address),
+    )
 }
 
 struct TestSetup<'a> {
@@ -40,7 +44,13 @@ fn setup<'a>() -> TestSetup<'a> {
     reputation.authorize_writer(&registry_id);
     token_admin.mint(&admin, &10_000_000_000_i128);
 
-    TestSetup { env, registry, reputation, token, admin }
+    TestSetup {
+        env,
+        registry,
+        reputation,
+        token,
+        admin,
+    }
 }
 
 fn fund_and_mint(s: &TestSetup, who: &Address, amount: i128) {
@@ -55,7 +65,10 @@ fn test_file_report_escrows_stake() {
     fund_and_mint(&s, &hiker, 1_000_000_000);
 
     let trail_id = String::from_str(&s.env, "PCT-mile-482");
-    let note = String::from_str(&s.env, "Large tree down blocking the trail, easy to route around");
+    let note = String::from_str(
+        &s.env,
+        "Large tree down blocking the trail, easy to route around",
+    );
 
     let id = s.registry.file_report(
         &hiker,
@@ -80,7 +93,9 @@ fn test_file_report_rejects_non_positive_stake() {
     fund_and_mint(&s, &hiker, 1_000_000_000);
     let trail_id = String::from_str(&s.env, "trail-1");
     let note = String::from_str(&s.env, "test note here");
-    let result = s.registry.try_file_report(&hiker, &trail_id, &ConditionType::Clear, &note, &0);
+    let result = s
+        .registry
+        .try_file_report(&hiker, &trail_id, &ConditionType::Clear, &note, &0);
     assert!(result.is_err());
 }
 
@@ -91,7 +106,13 @@ fn test_corroboration_below_threshold_stays_pending() {
     fund_and_mint(&s, &hiker, 1_000_000_000);
     let trail_id = String::from_str(&s.env, "trail-1");
     let note = String::from_str(&s.env, "washout near the creek crossing");
-    let id = s.registry.file_report(&hiker, &trail_id, &ConditionType::Washout, &note, &10_000_000);
+    let id = s.registry.file_report(
+        &hiker,
+        &trail_id,
+        &ConditionType::Washout,
+        &note,
+        &10_000_000,
+    );
 
     let voter1 = Address::generate(&s.env);
     let voter2 = Address::generate(&s.env);
@@ -112,7 +133,13 @@ fn test_corroboration_crossing_threshold_pays_out_and_updates_reputation() {
 
     let trail_id = String::from_str(&s.env, "trail-1");
     let note = String::from_str(&s.env, "bridge is out, need detour markers");
-    let id = s.registry.file_report(&hiker, &trail_id, &ConditionType::Washout, &note, &10_000_000);
+    let id = s.registry.file_report(
+        &hiker,
+        &trail_id,
+        &ConditionType::Washout,
+        &note,
+        &10_000_000,
+    );
 
     let balance_before = s.token.balance(&hiker);
 
@@ -142,7 +169,13 @@ fn test_dispute_crossing_threshold_forfeits_stake_and_penalizes_reputation() {
 
     let trail_id = String::from_str(&s.env, "trail-2");
     let note = String::from_str(&s.env, "claims trail closed but it was fully open");
-    let id = s.registry.file_report(&hiker, &trail_id, &ConditionType::Closure, &note, &10_000_000);
+    let id = s.registry.file_report(
+        &hiker,
+        &trail_id,
+        &ConditionType::Closure,
+        &note,
+        &10_000_000,
+    );
 
     let balance_before = s.token.balance(&hiker);
 
@@ -170,7 +203,9 @@ fn test_reporter_cannot_vote_on_own_report() {
     fund_and_mint(&s, &hiker, 1_000_000_000);
     let trail_id = String::from_str(&s.env, "trail-1");
     let note = String::from_str(&s.env, "some trail condition note");
-    let id = s.registry.file_report(&hiker, &trail_id, &ConditionType::Clear, &note, &10_000_000);
+    let id = s
+        .registry
+        .file_report(&hiker, &trail_id, &ConditionType::Clear, &note, &10_000_000);
 
     let result = s.registry.try_corroborate(&id, &hiker);
     assert!(result.is_err());
@@ -183,7 +218,9 @@ fn test_cannot_vote_twice_on_same_report() {
     fund_and_mint(&s, &hiker, 1_000_000_000);
     let trail_id = String::from_str(&s.env, "trail-1");
     let note = String::from_str(&s.env, "some trail condition note");
-    let id = s.registry.file_report(&hiker, &trail_id, &ConditionType::Clear, &note, &10_000_000);
+    let id = s
+        .registry
+        .file_report(&hiker, &trail_id, &ConditionType::Clear, &note, &10_000_000);
 
     let voter = Address::generate(&s.env);
     s.registry.corroborate(&id, &voter);
@@ -198,7 +235,9 @@ fn test_cannot_vote_on_settled_report() {
     fund_and_mint(&s, &hiker, 1_000_000_000);
     let trail_id = String::from_str(&s.env, "trail-1");
     let note = String::from_str(&s.env, "some trail condition note");
-    let id = s.registry.file_report(&hiker, &trail_id, &ConditionType::Clear, &note, &10_000_000);
+    let id = s
+        .registry
+        .file_report(&hiker, &trail_id, &ConditionType::Clear, &note, &10_000_000);
 
     let voter1 = Address::generate(&s.env);
     let voter2 = Address::generate(&s.env);
@@ -220,7 +259,8 @@ fn test_list_reports_pagination() {
     for _ in 0..4 {
         let trail_id = String::from_str(&s.env, "trail-x");
         let note = String::from_str(&s.env, "routine condition note");
-        s.registry.file_report(&hiker, &trail_id, &ConditionType::Clear, &note, &5_000_000);
+        s.registry
+            .file_report(&hiker, &trail_id, &ConditionType::Clear, &note, &5_000_000);
     }
     assert_eq!(s.registry.report_count(), 4);
     let page = s.registry.list_reports(&0, &2);
@@ -232,6 +272,8 @@ fn test_unauthorized_writer_cannot_forge_reputation() {
     let s = setup();
     let hiker = Address::generate(&s.env);
     let rogue_contract = Address::generate(&s.env);
-    let result = s.reputation.try_record_confirmation(&rogue_contract, &hiker, &10_i128);
+    let result = s
+        .reputation
+        .try_record_confirmation(&rogue_contract, &hiker, &10_i128);
     assert!(result.is_err());
 }

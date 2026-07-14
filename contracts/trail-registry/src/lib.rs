@@ -17,8 +17,7 @@
 #![no_std]
 
 use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, token, Address, Env,
-    String, Symbol, Vec,
+    contract, contracterror, contractimpl, contracttype, token, Address, Env, String, Symbol, Vec,
 };
 
 mod reputation {
@@ -89,7 +88,6 @@ const CONFIRMATION_THRESHOLD: u32 = 3;
 const DISPUTE_THRESHOLD: u32 = 3;
 const REWARD_BONUS_STROOPS: i128 = 5_000_000; // 0.5 XLM paid from reward pool on confirmation
 
-
 #[contract]
 pub struct TrailRegistry;
 
@@ -132,7 +130,11 @@ impl TrailRegistry {
         let token_client = token::Client::new(&env, &token_address);
         token_client.transfer(&admin, &env.current_contract_address(), &amount);
 
-        let pool: i128 = env.storage().instance().get(&DataKey::RewardPool).unwrap_or(0);
+        let pool: i128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::RewardPool)
+            .unwrap_or(0);
         env.storage()
             .instance()
             .set(&DataKey::RewardPool, &(pool + amount));
@@ -161,7 +163,11 @@ impl TrailRegistry {
         let token_client = token::Client::new(&env, &token_address);
         token_client.transfer(&reporter, &env.current_contract_address(), &stake);
 
-        let id: u32 = env.storage().instance().get(&DataKey::ReportCount).unwrap_or(0);
+        let id: u32 = env
+            .storage()
+            .instance()
+            .get(&DataKey::ReportCount)
+            .unwrap_or(0);
 
         let report = Report {
             id,
@@ -176,14 +182,20 @@ impl TrailRegistry {
             reported_at: env.ledger().timestamp(),
         };
 
-        env.storage().persistent().set(&DataKey::Report(id), &report);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Report(id), &report);
         env.storage()
             .instance()
             .set(&DataKey::ReportCount, &(id + 1));
 
         env.events().publish(
-            (Symbol::new(&env, "trail"), Symbol::new(&env, "report_filed"), id),
-            (reporter, trail_id)
+            (
+                Symbol::new(&env, "trail"),
+                Symbol::new(&env, "report_filed"),
+                id,
+            ),
+            (reporter, trail_id),
         );
 
         Ok(id)
@@ -211,12 +223,18 @@ impl TrailRegistry {
             Self::settle_confirmation(&env, &mut report)?;
         } else {
             env.events().publish(
-                (Symbol::new(&env, "trail"), Symbol::new(&env, "corroborated"), report_id),
-                (voter, report.confirmations)
+                (
+                    Symbol::new(&env, "trail"),
+                    Symbol::new(&env, "corroborated"),
+                    report_id,
+                ),
+                (voter, report.confirmations),
             );
         }
 
-        env.storage().persistent().set(&DataKey::Report(report_id), &report);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Report(report_id), &report);
         Ok(())
     }
 
@@ -242,12 +260,18 @@ impl TrailRegistry {
             Self::settle_dispute(&env, &mut report)?;
         } else {
             env.events().publish(
-                (Symbol::new(&env, "trail"), Symbol::new(&env, "disputed"), report_id),
-                (voter, report.disputes)
+                (
+                    Symbol::new(&env, "trail"),
+                    Symbol::new(&env, "disputed"),
+                    report_id,
+                ),
+                (voter, report.disputes),
             );
         }
 
-        env.storage().persistent().set(&DataKey::Report(report_id), &report);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Report(report_id), &report);
         Ok(())
     }
 
@@ -259,7 +283,11 @@ impl TrailRegistry {
             .ok_or(RegistryError::NotInitialized)?;
         let token_client = token::Client::new(env, &token_address);
 
-        let pool: i128 = env.storage().instance().get(&DataKey::RewardPool).unwrap_or(0);
+        let pool: i128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::RewardPool)
+            .unwrap_or(0);
         let bonus = if pool >= REWARD_BONUS_STROOPS {
             REWARD_BONUS_STROOPS
         } else {
@@ -291,8 +319,12 @@ impl TrailRegistry {
         report.status = ReportStatus::Confirmed;
 
         env.events().publish(
-            (Symbol::new(env, "trail"), Symbol::new(env, "confirmed"), report.id),
-            (report.reporter.clone(), payout)
+            (
+                Symbol::new(env, "trail"),
+                Symbol::new(env, "confirmed"),
+                report.id,
+            ),
+            (report.reporter.clone(), payout),
         );
 
         Ok(())
@@ -301,7 +333,11 @@ impl TrailRegistry {
     fn settle_dispute(env: &Env, report: &mut Report) -> Result<(), RegistryError> {
         // Forfeited stake goes to the reward pool (stays in this
         // contract's balance; the pool counter tracks what's spendable).
-        let pool: i128 = env.storage().instance().get(&DataKey::RewardPool).unwrap_or(0);
+        let pool: i128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::RewardPool)
+            .unwrap_or(0);
         env.storage()
             .instance()
             .set(&DataKey::RewardPool, &(pool + report.stake));
@@ -318,8 +354,12 @@ impl TrailRegistry {
         report.status = ReportStatus::Disputed;
 
         env.events().publish(
-            (Symbol::new(env, "trail"), Symbol::new(env, "refuted"), report.id),
-            report.reporter.clone()
+            (
+                Symbol::new(env, "trail"),
+                Symbol::new(env, "refuted"),
+                report.id,
+            ),
+            report.reporter.clone(),
         );
 
         Ok(())
@@ -330,7 +370,11 @@ impl TrailRegistry {
     }
 
     pub fn list_reports(env: Env, offset: u32, limit: u32) -> Vec<Report> {
-        let count: u32 = env.storage().instance().get(&DataKey::ReportCount).unwrap_or(0);
+        let count: u32 = env
+            .storage()
+            .instance()
+            .get(&DataKey::ReportCount)
+            .unwrap_or(0);
         let mut out = Vec::new(&env);
         let mut i = offset;
         let end = (offset + limit).min(count);
@@ -344,11 +388,17 @@ impl TrailRegistry {
     }
 
     pub fn report_count(env: Env) -> u32 {
-        env.storage().instance().get(&DataKey::ReportCount).unwrap_or(0)
+        env.storage()
+            .instance()
+            .get(&DataKey::ReportCount)
+            .unwrap_or(0)
     }
 
     pub fn reward_pool_balance(env: Env) -> i128 {
-        env.storage().instance().get(&DataKey::RewardPool).unwrap_or(0)
+        env.storage()
+            .instance()
+            .get(&DataKey::RewardPool)
+            .unwrap_or(0)
     }
 
     fn get_report_internal(env: &Env, report_id: u32) -> Result<Report, RegistryError> {

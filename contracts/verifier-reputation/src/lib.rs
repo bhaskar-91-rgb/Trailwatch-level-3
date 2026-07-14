@@ -36,8 +36,6 @@ pub enum ReputationError {
     InvalidAmount = 4,
 }
 
-
-
 const STARTING_SCORE: u32 = 500;
 const MAX_SCORE: u32 = 1000;
 const CONFIRM_BONUS: u32 = 20;
@@ -69,7 +67,14 @@ impl VerifierReputation {
             .instance()
             .set(&DataKey::AuthorizedWriter(writer.clone()), &true);
 
-        env.events().publish((Symbol::new(&env, "registry"), Symbol::new(&env, "writer_authorized"), writer), ());
+        env.events().publish(
+            (
+                Symbol::new(&env, "registry"),
+                Symbol::new(&env, "writer_authorized"),
+                writer,
+            ),
+            (),
+        );
         Ok(())
     }
 
@@ -98,8 +103,12 @@ impl VerifierReputation {
             .set(&DataKey::Stats(hiker.clone()), &stats);
 
         env.events().publish(
-            (Symbol::new(&env, "reputation"), Symbol::new(&env, "report_confirmed"), hiker),
-            (stats.accuracy_score, stake_earned)
+            (
+                Symbol::new(&env, "reputation"),
+                Symbol::new(&env, "report_confirmed"),
+                hiker,
+            ),
+            (stats.accuracy_score, stake_earned),
         );
 
         Ok(stats)
@@ -125,8 +134,12 @@ impl VerifierReputation {
             .set(&DataKey::Stats(hiker.clone()), &stats);
 
         env.events().publish(
-            (Symbol::new(&env, "reputation"), Symbol::new(&env, "report_refuted"), hiker),
-            stats.accuracy_score
+            (
+                Symbol::new(&env, "reputation"),
+                Symbol::new(&env, "report_refuted"),
+                hiker,
+            ),
+            stats.accuracy_score,
         );
 
         Ok(stats)
