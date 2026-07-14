@@ -148,7 +148,7 @@ async function readContract(
   args: xdr.ScVal[]
 ): Promise<unknown> {
   const server = getServer();
-  const dummySource = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF";
+  const dummySource = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF";
   const account = await server
     .getAccount(dummySource)
     .catch(async () => new (await import("@stellar/stellar-sdk")).Account(dummySource, "0"));
