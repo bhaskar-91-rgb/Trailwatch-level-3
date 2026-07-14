@@ -67,6 +67,26 @@ jobs:
           echo "Fetching Test Token (Native XLM asset) ID..."
           TOKEN_ID=$(stellar contract id asset --asset native --network testnet)
           echo "Native Token ID is: $TOKEN_ID"
+          
+          echo "Initializing contracts..."
+          DEPLOYER_ADDR=$(stellar keys address deployer)
+          
+          stellar contract invoke --id $VR_CONTRACT_ID \
+            --source deployer --network testnet \
+            -- initialize --admin $DEPLOYER_ADDR
+            
+          stellar contract invoke --id $VR_CONTRACT_ID \
+            --source deployer --network testnet \
+            -- authorize_writer --writer $TR_CONTRACT_ID
+            
+          stellar contract invoke --id $TR_CONTRACT_ID \
+            --source deployer --network testnet \
+            -- initialize --admin $DEPLOYER_ADDR \
+            --token_address $TOKEN_ID --reputation_address $VR_CONTRACT_ID
+            
+          stellar contract invoke --id $TR_CONTRACT_ID \
+            --source deployer --network testnet \
+            -- fund_reward_pool --admin $DEPLOYER_ADDR --amount 1000000000
 
           echo "::notice::Verifier Reputation Contract: $VR_CONTRACT_ID"
           echo "::notice::Trail Registry Contract: $TR_CONTRACT_ID"

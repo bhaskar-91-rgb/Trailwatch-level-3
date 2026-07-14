@@ -183,7 +183,7 @@ export async function fileReport(
   const args = [
     new Address(reporterAddress).toScVal(),
     nativeToScVal(trailId, { type: "string" }),
-    nativeToScVal({ [condition]: {} }, { type: "instance" }),
+    xdr.ScVal.scvVec([nativeToScVal(condition, { type: "symbol" })]),
     nativeToScVal(note, { type: "string" }),
     nativeToScVal(stakeStroops, { type: "i128" }),
   ];
