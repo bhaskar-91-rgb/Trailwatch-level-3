@@ -259,6 +259,9 @@ function mapRawReport(raw: any): TrailReport {
 
 function mapEnum(raw: unknown): string {
   if (typeof raw === "string") return raw;
+  if (Array.isArray(raw) && raw.length > 0) {
+    return String(raw[0]);
+  }
   if (raw && typeof raw === "object") {
     return Object.keys(raw as object)[0] ?? "Clear";
   }
