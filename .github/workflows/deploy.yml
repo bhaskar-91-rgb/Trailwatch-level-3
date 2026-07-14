@@ -39,7 +39,8 @@ jobs:
 
       - name: Build contracts
         run: |
-          cargo build --target wasm32-unknown-unknown --release
+          cargo build -p verifier-reputation --target wasm32-unknown-unknown --release
+          cargo build -p trail-registry --target wasm32-unknown-unknown --release
           stellar contract optimize --wasm target/wasm32-unknown-unknown/release/trail_registry.wasm
           stellar contract optimize --wasm target/wasm32-unknown-unknown/release/verifier_reputation.wasm
 

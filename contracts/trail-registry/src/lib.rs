@@ -17,13 +17,13 @@
 #![no_std]
 
 use soroban_sdk::{
-    contract, contracterror, contractevent, contractimpl, contracttype, token, Address, Env,
-    String, Vec,
+    contract, contracterror, contractimpl, contracttype, token, Address, Env,
+    String, Symbol, Vec,
 };
 
 mod reputation {
     soroban_sdk::contractimport!(
-        file = "../verifier-reputation/target/wasm32-unknown-unknown/release/verifier_reputation.wasm"
+        file = "../../target/wasm32-unknown-unknown/release/verifier_reputation.wasm"
     );
 }
 
@@ -89,44 +89,6 @@ const CONFIRMATION_THRESHOLD: u32 = 3;
 const DISPUTE_THRESHOLD: u32 = 3;
 const REWARD_BONUS_STROOPS: i128 = 5_000_000; // 0.5 XLM paid from reward pool on confirmation
 
-#[contractevent(topics = ["trail", "report_filed"])]
-pub struct ReportFiledEvent {
-    #[topic]
-    pub report_id: u32,
-    pub reporter: Address,
-    pub trail_id: String,
-}
-
-#[contractevent(topics = ["trail", "corroborated"])]
-pub struct CorroboratedEvent {
-    #[topic]
-    pub report_id: u32,
-    pub voter: Address,
-    pub confirmations: u32,
-}
-
-#[contractevent(topics = ["trail", "disputed"])]
-pub struct DisputedEvent {
-    #[topic]
-    pub report_id: u32,
-    pub voter: Address,
-    pub disputes: u32,
-}
-
-#[contractevent(topics = ["trail", "confirmed"])]
-pub struct ReportConfirmedEvent {
-    #[topic]
-    pub report_id: u32,
-    pub reporter: Address,
-    pub payout: i128,
-}
-
-#[contractevent(topics = ["trail", "refuted"])]
-pub struct ReportRefutedEvent {
-    #[topic]
-    pub report_id: u32,
-    pub reporter: Address,
-}
 
 #[contract]
 pub struct TrailRegistry;
@@ -219,12 +181,10 @@ impl TrailRegistry {
             .instance()
             .set(&DataKey::ReportCount, &(id + 1));
 
-        ReportFiledEvent {
-            report_id: id,
-            reporter,
-            trail_id,
-        }
-        .publish(&env);
+        env.events().publish(
+            (Symbol::new(&env, "trail"), Symbol::new(&env, "report_filed"), id),
+            (reporter, trail_id)
+        );
 
         Ok(id)
     }
@@ -250,12 +210,10 @@ impl TrailRegistry {
         if report.confirmations >= CONFIRMATION_THRESHOLD {
             Self::settle_confirmation(&env, &mut report)?;
         } else {
-            CorroboratedEvent {
-                report_id,
-                voter,
-                confirmations: report.confirmations,
-            }
-            .publish(&env);
+            env.events().publish(
+                (Symbol::new(&env, "trail"), Symbol::new(&env, "corroborated"), report_id),
+                (voter, report.confirmations)
+            );
         }
 
         env.storage().persistent().set(&DataKey::Report(report_id), &report);
@@ -283,12 +241,10 @@ impl TrailRegistry {
         if report.disputes >= DISPUTE_THRESHOLD {
             Self::settle_dispute(&env, &mut report)?;
         } else {
-            DisputedEvent {
-                report_id,
-                voter,
-                disputes: report.disputes,
-            }
-            .publish(&env);
+            env.events().publish(
+                (Symbol::new(&env, "trail"), Symbol::new(&env, "disputed"), report_id),
+                (voter, report.disputes)
+            );
         }
 
         env.storage().persistent().set(&DataKey::Report(report_id), &report);
@@ -334,12 +290,10 @@ impl TrailRegistry {
 
         report.status = ReportStatus::Confirmed;
 
-        ReportConfirmedEvent {
-            report_id: report.id,
-            reporter: report.reporter.clone(),
-            payout,
-        }
-        .publish(env);
+        env.events().publish(
+            (Symbol::new(env, "trail"), Symbol::new(env, "confirmed"), report.id),
+            (report.reporter.clone(), payout)
+        );
 
         Ok(())
     }
@@ -363,11 +317,10 @@ impl TrailRegistry {
 
         report.status = ReportStatus::Disputed;
 
-        ReportRefutedEvent {
-            report_id: report.id,
-            reporter: report.reporter.clone(),
-        }
-        .publish(env);
+        env.events().publish(
+            (Symbol::new(env, "trail"), Symbol::new(env, "refuted"), report.id),
+            report.reporter.clone()
+        );
 
         Ok(())
     }

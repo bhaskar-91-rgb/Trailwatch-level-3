@@ -8,7 +8,7 @@
 #![no_std]
 
 use soroban_sdk::{
-    contract, contracterror, contractevent, contractimpl, contracttype, Address, Env, String,
+    contract, contracterror, contractimpl, contracttype, symbol_short, Address, Env, String, Symbol,
 };
 
 #[contracttype]
@@ -36,26 +36,7 @@ pub enum ReputationError {
     InvalidAmount = 4,
 }
 
-#[contractevent(topics = ["reputation", "report_confirmed"])]
-pub struct ReportConfirmedEvent {
-    #[topic]
-    pub hiker: Address,
-    pub new_score: u32,
-    pub stake_earned: i128,
-}
 
-#[contractevent(topics = ["reputation", "report_refuted"])]
-pub struct ReportRefutedEvent {
-    #[topic]
-    pub hiker: Address,
-    pub new_score: u32,
-}
-
-#[contractevent(topics = ["registry", "writer_authorized"])]
-pub struct WriterAuthorizedEvent {
-    #[topic]
-    pub writer: Address,
-}
 
 const STARTING_SCORE: u32 = 500;
 const MAX_SCORE: u32 = 1000;
@@ -88,7 +69,7 @@ impl VerifierReputation {
             .instance()
             .set(&DataKey::AuthorizedWriter(writer.clone()), &true);
 
-        WriterAuthorizedEvent { writer }.publish(&env);
+        env.events().publish((Symbol::new(&env, "registry"), Symbol::new(&env, "writer_authorized"), writer), ());
         Ok(())
     }
 
@@ -116,12 +97,10 @@ impl VerifierReputation {
             .persistent()
             .set(&DataKey::Stats(hiker.clone()), &stats);
 
-        ReportConfirmedEvent {
-            hiker,
-            new_score: stats.accuracy_score,
-            stake_earned,
-        }
-        .publish(&env);
+        env.events().publish(
+            (Symbol::new(&env, "reputation"), Symbol::new(&env, "report_confirmed"), hiker),
+            (stats.accuracy_score, stake_earned)
+        );
 
         Ok(stats)
     }
@@ -145,11 +124,10 @@ impl VerifierReputation {
             .persistent()
             .set(&DataKey::Stats(hiker.clone()), &stats);
 
-        ReportRefutedEvent {
-            hiker,
-            new_score: stats.accuracy_score,
-        }
-        .publish(&env);
+        env.events().publish(
+            (Symbol::new(&env, "reputation"), Symbol::new(&env, "report_refuted"), hiker),
+            stats.accuracy_score
+        );
 
         Ok(stats)
     }
