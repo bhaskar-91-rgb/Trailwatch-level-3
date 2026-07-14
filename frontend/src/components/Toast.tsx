@@ -44,6 +44,16 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
       </span>
       <div className="min-w-0 flex-1">
         <p className={`text-sm ${isSuccess ? "text-canvas" : "text-pine"}`}>{toast.message}</p>
+        {toast.txHash && (
+          <a
+            href={`https://stellar.expert/explorer/testnet/tx/${toast.txHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`text-xs block mt-1 underline hover:no-underline ${isSuccess ? "text-creek" : "text-danger-dark"}`}
+          >
+            View transaction ↗
+          </a>
+        )}
       </div>
       <button
         onClick={() => onDismiss(toast.id)}
