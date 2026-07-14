@@ -1,0 +1,72 @@
+name: Deploy Contracts to Testnet
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  deploy:
+    name: Deploy to Testnet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache cargo registry and binaries
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+            target
+          key: ${{ runner.os }}-cargo-deploy-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install cargo-binstall
+        run: curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+
+      - name: Install Stellar CLI
+        run: cargo binstall --no-confirm stellar-cli
+
+      - name: Build contracts
+        run: |
+          cargo build --target wasm32-unknown-unknown --release
+          stellar contract optimize --wasm target/wasm32-unknown-unknown/release/trail_registry.wasm
+          stellar contract optimize --wasm target/wasm32-unknown-unknown/release/verifier_reputation.wasm
+
+      - name: Deploy to Testnet
+        run: |
+          echo "Generating identities..."
+          stellar keys generate deployer --network testnet
+          stellar keys fund deployer --network testnet
+
+          echo "Deploying Verifier Reputation Contract..."
+          VR_CONTRACT_ID=$(stellar contract deploy \
+            --wasm target/wasm32-unknown-unknown/release/verifier_reputation.optimized.wasm \
+            --source deployer \
+            --network testnet 2>deploy_err_vr.log) || { cat deploy_err_vr.log; exit 1; }
+          echo "Verifier Reputation Contract deployed at: $VR_CONTRACT_ID"
+
+          echo "Deploying Trail Registry Contract..."
+          TR_CONTRACT_ID=$(stellar contract deploy \
+            --wasm target/wasm32-unknown-unknown/release/trail_registry.optimized.wasm \
+            --source deployer \
+            --network testnet 2>deploy_err_tr.log) || { cat deploy_err_tr.log; exit 1; }
+          echo "Trail Registry Contract deployed at: $TR_CONTRACT_ID"
+          
+          echo "Fetching Test Token (Native XLM asset) ID..."
+          TOKEN_ID=$(stellar contract id asset --asset native --network testnet)
+          echo "Native Token ID is: $TOKEN_ID"
+
+          echo "::notice::Verifier Reputation Contract: $VR_CONTRACT_ID"
+          echo "::notice::Trail Registry Contract: $TR_CONTRACT_ID"
+          echo "::notice::Native Token ID: $TOKEN_ID"
