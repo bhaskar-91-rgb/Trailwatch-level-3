@@ -9,7 +9,7 @@ fn setup() -> (Env, VerifierReputationClient<'static>, Address, Address) {
     env.mock_all_auths();
 
     let admin = Address::generate(&env);
-    let contract_id = env.register(VerifierReputation, ());
+    let contract_id = env.register_contract(None, crate::VerifierReputation);
     let client = VerifierReputationClient::new(&env, &contract_id);
     client.initialize(&admin);
 

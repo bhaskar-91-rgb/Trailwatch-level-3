@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use super::*;
-use verifier_reputation::VerifierReputation;
+
 use soroban_sdk::testutils::Address as _;
 use soroban_sdk::Env;
 
@@ -29,11 +29,11 @@ fn setup<'a>() -> TestSetup<'a> {
     let admin = Address::generate(&env);
     let (token_address, token_admin, token) = create_token_contract(&env, &admin);
 
-    let reputation_id = env.register(VerifierReputation, ());
+    let reputation_id = env.register_contract(None, verifier_reputation::VerifierReputation);
     let reputation = verifier_reputation::VerifierReputationClient::new(&env, &reputation_id);
     reputation.initialize(&admin);
 
-    let registry_id = env.register(TrailRegistry, ());
+    let registry_id = env.register_contract(None, crate::TrailRegistry);
     let registry = TrailRegistryClient::new(&env, &registry_id);
     registry.initialize(&admin, &token_address, &reputation_id);
 
