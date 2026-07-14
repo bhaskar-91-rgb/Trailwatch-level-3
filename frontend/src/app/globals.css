@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+body {
+  background-color: #F4F1E8;
+  color: #1F3B2C;
+  font-family: var(--font-body);
+  background-image:
+    radial-gradient(circle at 15% 8%, rgba(31, 59, 44, 0.05) 0%, transparent 45%),
+    radial-gradient(circle at 85% 92%, rgba(217, 98, 43, 0.05) 0%, transparent 45%);
+}
+
+::selection {
+  background-color: #D9622B;
+  color: #F4F1E8;
+}
+
+:focus-visible {
+  outline: 2px solid #D9622B;
+  outline-offset: 2px;
+}
+
+.card-edge {
+  box-shadow: 0 1px 0 0 rgba(31, 59, 44, 0.06), 0 2px 6px 0 rgba(31, 59, 44, 0.08);
+}
+
+.status-dot {
+  animation: pulseDot 1.6s ease-in-out infinite;
+}
+
+.trail-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.trail-scroll::-webkit-scrollbar-thumb {
+  background-color: #C9C2AC;
+  border-radius: 3px;
+}
+
+.contour-bg {
+  background-image: repeating-radial-gradient(
+    circle at 30% 20%,
+    transparent 0,
+    transparent 28px,
+    rgba(31, 59, 44, 0.035) 29px,
+    transparent 30px
+  );
+}
